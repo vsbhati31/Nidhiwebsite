@@ -1,0 +1,162 @@
+(function() {
+    // Create floating chat widget
+    function createChatWidget() {
+        const widget = document.createElement('div');
+        widget.id = 'nidhi-ai-widget';
+        widget.innerHTML = `
+            <div id="chat-toggle" style="
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                width: 60px;
+                height: 60px;
+                background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 24px;
+                box-shadow: 0 4px 12px rgba(30, 60, 114, 0.4);
+                z-index: 1000;
+                transition: all 0.3s ease;
+                animation: pulse 2s infinite;
+            ">💬</div>
+            
+            <div id="chat-popup" style="
+                position: fixed;
+                bottom: 90px;
+                right: 20px;
+                width: 350px;
+                height: 500px;
+                background: white;
+                border-radius: 15px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                z-index: 1001;
+                display: none;
+                overflow: hidden;
+            ">
+                <div style="
+                    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+                    color: white;
+                    padding: 15px;
+                    font-weight: bold;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                ">
+                    <span>Nidhi AI Assistant</span>
+                    <span id="close-chat" style="cursor: pointer; font-size: 18px;">✕</span>
+                </div>
+                <iframe src="ai-agent.html" style="
+                    width: 100%;
+                    height: calc(100% - 50px);
+                    border: none;
+                "></iframe>
+            </div>
+        `;
+        
+        document.body.appendChild(widget);
+        
+        // Add CSS animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.1); }
+                100% { transform: scale(1); }
+            }
+            
+            #chat-toggle:hover {
+                transform: scale(1.1);
+                box-shadow: 0 6px 20px rgba(30, 60, 114, 0.6);
+            }
+            
+            @media (max-width: 768px) {
+                #chat-popup {
+                    width: calc(100vw - 40px);
+                    height: 70vh;
+                    bottom: 90px;
+                    right: 20px;
+                    left: 20px;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Event listeners
+        document.getElementById('chat-toggle').onclick = function() {
+            const popup = document.getElementById('chat-popup');
+            popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
+            
+            // Track engagement
+            if (popup.style.display === 'block') {
+                trackEvent('ai_chat_opened');
+            }
+        };
+        
+        document.getElementById('close-chat').onclick = function() {
+            document.getElementById('chat-popup').style.display = 'none';
+        };
+    }
+    
+    // Analytics tracking function
+    function trackEvent(eventName) {
+        // Google Analytics 4
+        if (typeof gtag !== 'undefined') {
+            gtag('event', eventName, {
+                'custom_parameter': 'nidhi_ai_chat'
+            });
+        }
+        
+        // Facebook Pixel
+        if (typeof fbq !== 'undefined') {
+            fbq('track', 'Lead', {
+                content_name: 'AI Chat Interaction'
+            });
+        }
+        
+        // Console log for debugging
+        console.log('Nidhi AI Event:', eventName);
+    }
+    
+    // Auto-show chat after 30 seconds on page
+    function autoShowChat() {
+        setTimeout(() => {
+            const popup = document.getElementById('chat-popup');
+            if (popup && popup.style.display === 'none') {
+                popup.style.display = 'block';
+                trackEvent('ai_chat_auto_opened');
+                
+                // Auto-hide after 10 seconds if no interaction
+                setTimeout(() => {
+                    if (popup.style.display === 'block') {
+                        popup.style.display = 'none';
+                    }
+                }, 10000);
+            }
+        }, 30000);
+    }
+    
+    // Initialize when page loads
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            createChatWidget();
+            autoShowChat();
+        });
+    } else {
+        createChatWidget();
+        autoShowChat();
+    }
+    
+    // Exit-intent detection
+    document.addEventListener('mouseleave', function(e) {
+        if (e.clientY <= 0) {
+            const popup = document.getElementById('chat-popup');
+            if (popup && popup.style.display === 'none') {
+                popup.style.display = 'block';
+                trackEvent('ai_chat_exit_intent');
+            }
+        }
+    });
